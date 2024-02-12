@@ -1,15 +1,20 @@
 #pragma once
-#include "SDL3/SDL.h"
-#include <iostream>
+
+#include "chip8.h"
+
+
+#define LOG_FPS
+
 class Display
 {
 public:
 	Display(unsigned int width, unsigned int height, SDL_Color drawColor, SDL_Color backgroundColor);
 	void UpdateData();
 	void display();
+	void LogDisplay();
 	
 private:
-	void DrawPixel(int x, int y);
+	void DrawPixel(size_t x, size_t y);
 	void Draw();
 
 	bool _active = true;
@@ -17,8 +22,8 @@ private:
 	SDL_Renderer* _renderer = nullptr;
 	SDL_Color _drawColor = SDL_Color{};
 	SDL_Color _backgroundColor = SDL_Color{};
-	unsigned int _width = 0;
-	unsigned int _height = 0;
-	bool _data[32][64]{};
+	byte _width = 0;
+	byte _height = 0;
+	byte _data[32][8]{};
 	
 };
