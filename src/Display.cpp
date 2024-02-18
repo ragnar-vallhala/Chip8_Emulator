@@ -1,7 +1,8 @@
 #include "Display.h"
 
-Display::Display(unsigned int width, unsigned int height, SDL_Color drawColor, SDL_Color backgroundColor)
+Display::Display(unsigned int width, unsigned int height, SDL_Color drawColor, SDL_Color backgroundColor, const char* path)
 {
+    std::cout << "Display Created" << std::endl;
 
     if (SDL_Init(0xFFFFFF) != 0)
     {
@@ -24,23 +25,24 @@ Display::Display(unsigned int width, unsigned int height, SDL_Color drawColor, S
     _backgroundColor = backgroundColor;
     _width = width;
     _height = height;
-    
-    for (size_t i{}; i < 32; i++)
-    {
-        for (size_t j{}; j < 8; j++)
-        {
-            _data[i][j] = 0x0;
-        }
-    }
+    _cpu = new CPU(path);
+    ClearDisplay();
 }
 
-byte A[5]{ 0x18, 0x24, 0x3c, 0x24, 0x24 };
-int x = 25, y = 29, h=5;
+Display::~Display()
+{
+    std::cout << "Display Destroyed" << std::endl;
+    delete _cpu;
+}
+
 
 void Display::UpdateData()
 {
-    byte* DataBuffer = A;
-
+    size_t DataBuffer = _cpu->getI();
+    int x, y, h;
+    x = _cpu->_drawCommand._x;
+    y = _cpu->_drawCommand._y;
+    h = _cpu->_drawCommand._n;
 
     bool flag = false;
     size_t xReg1 = x / 8;
@@ -57,38 +59,82 @@ void Display::UpdateData()
         size_t yPos = (y + i) % 32;
 
         byte mask1Reg = (0x1 << bitsInXReg1) - 1;
-        byte input1Reg = (DataBuffer[i] & (mask1Reg << bitsInXReg2))>>bitsInXReg2;
+        byte input1Reg = (_cpu->GetRAM(DataBuffer + i) & (mask1Reg << bitsInXReg2)) >> bitsInXReg2;
 
-        if(_data[yPos][xReg1]!= input1Reg)
+        size_t checker = 0b1;
+        for (size_t r{}; r < 8; r++)
         {
-            _data[yPos][xReg1] ^= input1Reg;
+            if ((_data[yPos][xReg1] & checker) && (input1Reg & checker))
+            {
+                flag = 1;
+                break;
+            }
+            checker <<= 1;
         }
+        
+        _data[yPos][xReg1] ^= input1Reg;
 
         byte mask2Reg = (0x1 << bitsInXReg2)-1;
-        byte input2Reg = (DataBuffer[i] & mask2Reg)<<bitsInXReg1;
+        byte input2Reg = (_cpu->GetRAM(DataBuffer + i) & mask2Reg)<<bitsInXReg1;
 
-        if (_data[yPos][xReg2] != input2Reg)
+        size_t checker2 = 0b1;
+        for (size_t r{}; r < 8; r++)
         {
-            _data[yPos][xReg2] ^= input2Reg;
+            if ((_data[yPos][xReg2] & checker2) && (input2Reg & checker2))
+            {
+                flag = 1;
+                break;
+            }
+            checker2 <<= 1;
         }
 
-        //std::cout<<"Height:" << i << "Mask1: " << (int)mask1Reg << " Reg1: " << (int)input1Reg << " Mask2: " << (int)mask2Reg << " Reg2: " << (int)input2Reg << "\n";
+        _data[yPos][xReg2] ^= input2Reg;
+        _cpu->_displayStatus = DisplayOut::STANDBY;
+        //std::cout<<"Inst: "<< std::hex <<(int)_cpu->GetRAM(DataBuffer+i) << " Height:" << i << "Mask1: " << (int)mask1Reg << " Reg1: " << (int)input1Reg << " Mask2: " << (int)mask2Reg << " Reg2: " << (int)input2Reg << "\n";
+        /*LogDisplay();*/
     }
+    if (flag)
+        _cpu->setFlag(1);
+    else
+        _cpu->setFlag(0);
 
 
+}
+
+void Display::ClearDisplay()
+{
+    for (size_t i{}; i < 32; i++)
+    {
+        for (size_t j{}; j < 8; j++)
+        {
+            _data[i][j] = 0x0;
+        }
+    }
+    _cpu->_displayStatus = DisplayOut::STANDBY;
 }
 
 
 void Display::display()
 {
-    
     while (_active)
     {
         SDL_Event event;
         long long diff{};
+        UpdateData();
+        
+        bool isRunning = true;
 
-        while (SDL_PollEvent(&event))
+        while (isRunning)
         {
+            SDL_PollEvent(&event);
+            switch (event.type)
+            {
+                case SDL_EVENT_QUIT:
+                    exit(0);
+                    isRunning = false;
+                    break;
+            }
+
             auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 
             switch(event.type){
@@ -99,9 +145,20 @@ void Display::display()
             SDL_SetRenderDrawColor(_renderer, _backgroundColor.r, _backgroundColor.g, _backgroundColor.b, _backgroundColor.a);
             SDL_RenderClear(_renderer);
             SDL_SetRenderDrawColor(_renderer, _drawColor.r, _drawColor.g, _drawColor.b, _drawColor.a);
-            UpdateData();
+            _cpu->Execute();
+            if (_cpu->_displayStatus == DisplayOut::DRAW)
+                UpdateData();
+            if (_cpu->_displayStatus == DisplayOut::CLEAR) 
+                ClearDisplay();
             Draw();
-            SDL_RenderPresent(_renderer);
+            SDL_Delay(2);
+            //std::system("cls");
+            /*std::cout << "************************************ RAM Coming ************************************\n";
+            _cpu->LogRAM();*/
+            /*std::cout << "************************************ GPR Coming ************************************\n";
+            _cpu->LogGPR();
+            std::cout << "********************************** SPReg Coming ************************************\n";
+            _cpu->LogSpcReg();*/
 
             diff = std::chrono::high_resolution_clock::now().time_since_epoch().count() - start;
         }
@@ -171,4 +228,5 @@ void Display::Draw()
             }
         }
     }
+    SDL_RenderPresent(_renderer);
 }
