@@ -158,6 +158,7 @@
     <ClCompile Include="src\CPU.cpp" />
     <ClCompile Include="src\Display.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\ProgramLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dependency\SDL\include\SDL3\SDL.h" />
@@ -243,6 +244,7 @@
     <ClInclude Include="src\chip8.h" />
     <ClInclude Include="src\CPU.h" />
     <ClInclude Include="src\Display.h" />
+    <ClInclude Include="src\ProgramLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />

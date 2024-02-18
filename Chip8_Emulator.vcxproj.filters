@@ -24,6 +24,9 @@
     <ClCompile Include="src\CPU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ProgramLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dependency\SDL\include\SDL3\SDL.h">
@@ -273,6 +276,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\CPU.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ProgramLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
