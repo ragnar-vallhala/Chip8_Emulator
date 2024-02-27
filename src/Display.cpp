@@ -1,3 +1,36 @@
+/*
+ * Chip-8 Interpreter
+ * Author: Ashutosh Vishwakarma
+ * Year: 2024
+ *
+ * Description:
+ *   This C++ program is a simple Chip-8 interpreter, capable of running Chip-8 programs.
+ *
+ * License:
+ *   MIT License
+ *
+ *   Copyright (c) 2024 Ashutosh Vishwakarma
+ *
+ *   Permission is hereby granted, free of charge, to any person obtaining a copy
+ *   of this software and associated documentation files (the "Software"), to deal
+ *   in the Software without restriction, including without limitation the rights
+ *   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *   copies of the Software, and to permit persons to whom the Software is
+ *   furnished to do so, subject to the following conditions:
+ *
+ *   The above copyright notice and this permission notice shall be included in
+ *   all copies or substantial portions of the Software.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *   THE SOFTWARE.
+ */
+
+
 #include "Display.h"
 
 Display::Display(unsigned int width, unsigned int height, SDL_Color drawColor, SDL_Color backgroundColor, const char* path)
@@ -135,6 +168,8 @@ void Display::display()
                     break;
             }
 
+            Keyboard(event);
+            
             auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 
             switch(event.type){
@@ -229,4 +264,50 @@ void Display::Draw()
         }
     }
     SDL_RenderPresent(_renderer);
+}
+
+void Display::Keyboard(SDL_Event &event)
+{
+    if (event.type == SDL_EVENT_KEY_DOWN) 
+    {
+        const char* key = SDL_GetKeyName(event.key.keysym.sym);
+        if (key[0] == '2')
+            _keyPressed = PhysicalKEY::PK2;
+        else if (key[0] == '3')
+            _keyPressed = PhysicalKEY::PK3;
+        else if (key[0] == '4')
+            _keyPressed = PhysicalKEY::PK4;
+        else if (key[0] == '5')
+            _keyPressed = PhysicalKEY::PK5;
+        else if (key[0] == 'Q')
+            _keyPressed = PhysicalKEY::PKQ;
+        else if (key[0] == 'W')
+            _keyPressed = PhysicalKEY::PKW;
+        else if (key[0] == 'E')
+            _keyPressed = PhysicalKEY::PKE;
+        else if (key[0] == 'R')
+            _keyPressed = PhysicalKEY::PKR;
+        else if (key[0] == 'A')
+            _keyPressed = PhysicalKEY::PKA;
+        else if (key[0] == 'S')
+            _keyPressed = PhysicalKEY::PKS;
+        else if (key[0] == 'D')
+            _keyPressed = PhysicalKEY::PKD;
+        else if (key[0] == 'F')
+            _keyPressed = PhysicalKEY::PKF;
+        else if (key[0] == 'Z')
+            _keyPressed = PhysicalKEY::PKZ;
+        else if (key[0] == 'X')
+            _keyPressed = PhysicalKEY::PKX;
+        else if (key[0] == 'C')
+            _keyPressed = PhysicalKEY::PKC;
+        else if (key[0] == 'V')
+            _keyPressed = PhysicalKEY::PKV;
+    }
+    else 
+    {
+        _keyPressed = 0x10;
+    }
+
+    _cpu->SetKeyDown(_keyPressed);
 }

@@ -1,3 +1,36 @@
+/*
+ * Chip-8 Interpreter
+ * Author: Ashutosh Vishwakarma
+ * Year: 2024
+ *
+ * Description:
+ *   This C++ program is a simple Chip-8 interpreter, capable of running Chip-8 programs.
+ *
+ * License:
+ *   MIT License
+ *
+ *   Copyright (c) 2024 Ashutosh Vishwakarma
+ *
+ *   Permission is hereby granted, free of charge, to any person obtaining a copy
+ *   of this software and associated documentation files (the "Software"), to deal
+ *   in the Software without restriction, including without limitation the rights
+ *   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *   copies of the Software, and to permit persons to whom the Software is
+ *   furnished to do so, subject to the following conditions:
+ *
+ *   The above copyright notice and this permission notice shall be included in
+ *   all copies or substantial portions of the Software.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *   THE SOFTWARE.
+ */
+
+
 #include "CPU.h"
 
 CPU::CPU(const char* path)
@@ -42,6 +75,40 @@ CPU::CPU(const char* path)
 	}
 	free(program);
 
+
+	_symbols = new byte[16 * 5];	//16 symbols; 5 byte long each
+	{
+
+		//0							//1							//2									//3							//4							//5
+		_symbols[0] = 0xf0;			_symbols[5] = 0x20;			_symbols[10] = 0xf0;			_symbols[15] = 0xf0;			_symbols[20] = 0x90;			_symbols[25] = 0xf0;
+		_symbols[1] = 0x90;			_symbols[6] = 0x60;			_symbols[11] = 0x10;			_symbols[16] = 0x10;			_symbols[21] = 0x90;			_symbols[26] = 0x80;
+		_symbols[2] = 0x90;			_symbols[7] = 0x20;			_symbols[12] = 0xf0;			_symbols[17] = 0xf0;			_symbols[22] = 0xf0;			_symbols[27] = 0xf0;
+		_symbols[3] = 0x90;			_symbols[8] = 0x20;			_symbols[13] = 0x80;			_symbols[18] = 0x10;			_symbols[23] = 0x10;			_symbols[28] = 0x10;
+		_symbols[4] = 0xf0;			_symbols[9] = 0x70;			_symbols[14] = 0xf0;			_symbols[19] = 0xf0;			_symbols[24] = 0x10;			_symbols[29] = 0xf0;
+
+
+		//6									//7								//8								//9							//A								//B
+		_symbols[30] = 0xf0;			_symbols[35] = 0xf0;			_symbols[40] = 0xf0;			_symbols[45] = 0xf0;			_symbols[50] = 0xf0;			_symbols[55] = 0xe0;
+		_symbols[31] = 0x80;			_symbols[36] = 0x10;			_symbols[41] = 0x90;			_symbols[46] = 0x90;			_symbols[51] = 0x90;			_symbols[56] = 0x90;
+		_symbols[32] = 0xf0;			_symbols[37] = 0x20;			_symbols[42] = 0xf0;			_symbols[47] = 0xf0;			_symbols[52] = 0xf0;			_symbols[57] = 0xe0;
+		_symbols[33] = 0x90;			_symbols[38] = 0x40;			_symbols[43] = 0x90;			_symbols[48] = 0x10;			_symbols[53] = 0x90;			_symbols[58] = 0x90;
+		_symbols[34] = 0xf0;			_symbols[39] = 0x40;			_symbols[44] = 0xf0;			_symbols[49] = 0xf0;			_symbols[54] = 0x90;			_symbols[59] = 0xe0;
+
+
+		//C									//D									//E							//F							
+		_symbols[60] = 0xf0;			_symbols[65] = 0xe0;			_symbols[70] = 0xf0;			_symbols[75] = 0xf0;			
+		_symbols[61] = 0x80;			_symbols[66] = 0x90;			_symbols[71] = 0x80;			_symbols[76] = 0x80;			
+		_symbols[62] = 0x80;			_symbols[67] = 0x90;			_symbols[72] = 0xf0;			_symbols[77] = 0xf0;			
+		_symbols[63] = 0x80;			_symbols[68] = 0x90;			_symbols[73] = 0x80;			_symbols[78] = 0x80;			
+		_symbols[64] = 0xf0;			_symbols[69] = 0xe0;			_symbols[74] = 0xf0;			_symbols[79] = 0x80;			
+
+	}
+
+	for (size_t i{}; i < 80; i++)
+	{
+		_RAM[100 + i] = _symbols[i];		//symbols start in RAM from address 0x100
+	}
+
 }
 
 void CPU::Execute()
@@ -58,6 +125,33 @@ void CPU::Execute()
 	bool shouldChangePC = true;
 	Uint16 x, y, i, kk, nnn, result;
 	byte random;
+	byte ones;
+	byte twos;
+	byte hundreds;
+
+	/******************************************************************************************************\
+	*	Sound and Timer Registers are upadted below at a 60Hz frequency
+	*	---------------------------------------------------------------------------------------------------
+	*	_soundReg	|	ST
+	*	_timerReg	|	DT
+	\******************************************************************************************************/
+
+	std::chrono::steady_clock::time_point currTime = std::chrono::high_resolution_clock::now();
+	if (*_soundReg > 0 && std::chrono::duration<double>((_lastSoundUpd - currTime)).count() > 16.66667)
+	{
+		_lastSoundUpd = currTime;
+		(*_soundReg)--;
+		std::cout << "Sound: " << (int)*_soundReg << "\n";
+	}
+
+	if (*_timerReg > 0 && std::chrono::duration<double>((_lastTimerUpd - currTime)).count() > 16.66667)
+	{
+		_lastTimerUpd = currTime;
+		(*_timerReg)--;
+		std::cout << "Timer: " << (int)*_timerReg << "\n";
+	}
+
+
 	switch (instruction) {
 		case 0xe0:
 			_displayStatus = DisplayOut::CLEAR;
@@ -235,7 +329,25 @@ void CPU::Execute()
 					_drawCommand._n = i;
 					break;
 				case 0xe000:
-					//TODO: Keyboard Instructions to be handled soon
+					x = (instruction & 0x0f00) >> 8;
+					nnn = (instruction & 0x00ff);
+					switch (nnn)
+					{
+						case 0x9e:
+							if (_GPR[x] == _keyDown)
+							{
+								(*_PC) += 2;
+								shouldChangePC = false;
+							}
+							break;
+						case 0xa1:
+							if (_GPR[x] != _keyDown)
+							{
+								(*_PC) += 2;
+								shouldChangePC = false;
+							}
+							break;
+					}
 					break;
 				case 0xf000:
 					//Instruction: Fxyi
@@ -250,7 +362,10 @@ void CPU::Execute()
 							break;
 						case 0x0a:
 							//Instruction: Wait for keypress and store key in Vx
-							//TODO: Soon to be done
+							if (_keyDown != 0x10)
+								_GPR[x] = _keyDown;
+							else
+								shouldChangePC = false;
 							break;
 						case 0x15:
 							//Set delay timer to Vx
@@ -269,7 +384,9 @@ void CPU::Execute()
 							break;
 						case 0x29:
 							//Set I to location of sprite of digit Vx
-							//TODO: Add font in the interpreter area
+							//digit sprite starts at 0x100
+							*_I = 100 + _GPR[x] * 5;			// offset 100 and factor 5
+
 							break;
 						case 0x33:
 							/*************************************************************
@@ -278,7 +395,13 @@ void CPU::Execute()
 							*			I+1	 |	twos
 							*			I+2	 |	ones											
 							***************************************************************/
-							//TODO: Add font in the interpreter area
+							kk = _GPR[x];
+							ones = kk % 10;
+							twos = (kk / 10) % 10;
+							hundreds = (kk / 100) % 10;
+							_RAM[*_I]	=	_RAM[100 + 5 * hundreds];
+							_RAM[*_I + 1] = _RAM[100 + 5 * twos];
+							_RAM[*_I + 2] = _RAM[100 + 5 * ones];
 							break;
 						case 0x55:
 							//Instruction: Fx55
@@ -344,4 +467,5 @@ CPU::~CPU()
 	delete[] _RAM;
 	delete[] _GPR;
 	delete[]  _stack;
+	delete[] _symbols;
 }
