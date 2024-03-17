@@ -38,6 +38,10 @@ cd Chip8_Emulator
 | A | S | D | F |
 | Z | X | C | V |
 
+# Refrences
+[CHIP8 - Wikipedia](https://en.wikipedia.org/wiki/CHIP-8)\
+[Cowgod's Chip-8](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM)
+
 # Developer
 Ashutosh Vishwakarma\
 BTech  CSE Student, IIT Jammu\
